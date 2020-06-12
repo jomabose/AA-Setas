@@ -21,6 +21,10 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OrdinalEncoder
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import cross_val_score
+import timeit
+from sklearn.linear_model import Lasso
+
 
 # Fijamos la semilla (19)
 np.random.seed(19)
@@ -204,36 +208,45 @@ def puntuacion_precision(clasificador, x, y):
     y_pred = clasificador.predict(x)
     return accuracy_score(y, y_pred)
   
-# Devuelve la clasificación del modelo que obtenga una mayor puntuación en Accuracy      
-def seleccionar_mejor_modelo(preprocesamientos, clasificaciones, x_train, y_train, x_val, y_val, mostrar_puntuacion=True):
+# Devuelve la clasificación del modelo que obtenga una mayor puntuación en Accuracy    .
+# En el caso de que varios modelos empaten en la mejor puntuación,
+# entonces el mejor modelo será aquel que menos tiempo haya necesitado.
+def seleccionar_mejor_modelo(preprocesamientos, clasificaciones, x_train, y_train, mostrar_puntuacion=True):
     """Parámetros:
+       preproceasmientos: array con los preprocesamientos que usar en el modelo
        clasificaciones: array con las clasificaciones que usar en el modelo
        x_train: conjunto de carácteristicas predictivas de los datos de entrenamiento
        y_train: etiquetas reales de los datos de entrenamiento
-       x_val: conjunto de carácteristicas predictivas de los datos de validación
-       y_val: etiquetas reales de los datos de validación
        mostrar_puntuacion: True para mostrar las puntuaciones de cada modelo, False para no mostrarlas
                            (True por defecto)
      """
-    mejor_puntuacion = 0
+    mejor_puntuacion = -1
     for i in range(len(clasificaciones)):
         for j in range(len(preprocesamientos)):
             # Cada clasificador está compuesto del preprocesamiento más la clasificación
             clasificador = Pipeline(preprocesamientos[j] + clasificaciones[i])
-            # Entrenamos el modelo según los datos de entrenamiento
-            clasificador.fit(x_train, y_train)
             # Obtenemos las puntuaciones 
-            puntuacion_train = puntuacion_precision(clasificador, x_train, y_train)
-            puntuacion_val = puntuacion_precision(clasificador, x_val, y_val)
+            principio = timeit.timeit()
+            puntuaciones = cross_val_score(clasificador, x_train, y_train, scoring=('accuracy'), cv=5)
+            final = timeit.timeit()
+            tiempo = final - principio
+            puntuacion_media = np.mean(puntuaciones)
             # Si la puntuación es la mejor, actualizamos el mejor modelo
-            if(puntuacion_val > mejor_puntuacion):
-                mejor_puntuacion = puntuacion_val
+            if(puntuacion_media > mejor_puntuacion):
+                mejor_puntuacion = puntuacion_media
                 mejor_clasificador = clasificador
-            # si es True, entonces mostramos las puntuaciones del modelo
+                mejor_tiempo = tiempo
+            # Si la puntuación iguala a la mejor y ha tardado menos tiempo, actualizamos el mejor modelo
+            if(puntuacion_media == mejor_puntuacion):
+                if(tiempo > mejor_tiempo):
+                    mejor_puntuacion = puntuacion_media
+                    mejor_clasificador = clasificador
+                    mejor_tiempo = tiempo
+            # si es True, entonces mostramos las puntuaciones y tiempos del modelo
             if( mostrar_puntuacion):
                 print("Puntuación en el clasificador de {} con el preprocesamiento {}".format( clasificaciones[i][0][0], j))
-                print("Precisión en training: ", puntuacion_train)
-                print("Precisión en validación: ", puntuacion_val)
+                print("Precisión: %f (+/- %f)" % (puntuaciones.mean(), puntuaciones.std() * 2))
+                print("Tiempo transcurrido: ", tiempo)
                 print("\n")
         
     return mejor_clasificador
@@ -249,7 +262,7 @@ clasificaciones.append([("Regresión Logística",
                          LogisticRegression(penalty='l2',
                                             solver='sag',
                                             max_iter=500,
-                                            multi_class='multinomial'))])
+                                            multi_class='ovr'))])
     
 clasificaciones.append([("SGD", SGDClassifier(loss = 'hinge',
                                               penalty = 'l2',
@@ -260,7 +273,7 @@ clasificaciones.append([("SVM", SVC())])
 clasificaciones.append([("RandomForest", RandomForestClassifier())])
 
 #Elegimos el mejor modelo (y mostramos las puntuaciones de cada modelo)
-mejor_clasificador = seleccionar_mejor_modelo(preprocesamientos, clasificaciones, x_train, y_train, x_test, y_test)
+mejor_clasificador = seleccionar_mejor_modelo(preprocesamientos, clasificaciones, x_train, y_train)
 print("\nEl mejor clasificador ha sido ", mejor_clasificador)
 
 input("\n--- Pulsar tecla para continuar ---\n")
@@ -272,7 +285,6 @@ input("\n--- Pulsar tecla para continuar ---\n")
 # Volvemos a entrenar pero esta vez usamos el conjunto train original (train+validación) para entrenar el modelo
 
 print("Errores del mejor clasificador:")
-#mejor_clasificador = Pipeline(preprocesamiento + mejor_clasificacion)
 mejor_clasificador.fit(x_train, y_train)
 
 print("Error en training: ", 1-puntuacion_precision(mejor_clasificador, x_train, y_train))
@@ -280,5 +292,5 @@ print("Error en test: ", 1-puntuacion_precision(mejor_clasificador, x_test, y_te
 grafica_matriz_confusion(mejor_clasificador, x_test, y_test, "Matriz de confusión en el conjunto test")
 
 print("\nEstimamos el error de Eout mediante validación cruzada")
-puntuaciones = cross_validate(mejor_clasificador, x_data, y_data, scoring=('accuracy'), cv=5)
-print("Media de Eval tras validación cruzada: ", 1 - np.mean(puntuaciones['test_score']))
+puntuaciones = cross_validate(mejor_clasificador, x_train, y_train, scoring=('accuracy'), cv=5)
+print("Media de Eval tras validación cruzada: %f (+/- %f)" % (1 - np.mean(puntuaciones['test_score']), puntuaciones['test_score'].std() * 2))
