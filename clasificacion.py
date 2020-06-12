@@ -19,6 +19,9 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OrdinalEncoder
+from sklearn.manifold import LocallyLinearEmbedding
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
 
 # Fijamos la semilla (19)
 np.random.seed(19)
@@ -100,7 +103,7 @@ def readData(file, delimiter=',', datatype = np.dtype(np.unicode)):
    data = np.delete(data, 11, 1) # Eliminamos la característica de la columna 11, porque le faltan el 30.5% de los valores
    data = OrdinalEncoder().fit_transform(data).astype('float64') # Pasamos los valores nominales a ordinales 
    
-   x = data[:, 1:-1]
+   x = data[:, 1:]
    y = data[:, 0]
 	
    return x, y
@@ -149,6 +152,7 @@ print("Preprocesado\n")
 
 # Preprocesamiento a realizar, usamos Pipeline para encadenar varios procesos
 
+
 preprocesamiento = [('estandarizar', StandardScaler()),
                     ('var', VarianceThreshold(0.05)),
                     ('polinomio grado 2', PolynomialFeatures(2,interaction_only=True)),
@@ -156,8 +160,8 @@ preprocesamiento = [('estandarizar', StandardScaler()),
                     ('PCA', PCA(n_components=0.95)),
                     ('estandarizar 3', StandardScaler())]
 
-preprocesado = Pipeline(preprocesamiento)
-
+#preprocesado = Pipeline(preprocesamiento)
+preprocesado = LocallyLinearEmbedding()
 # Realizamos un preprocesado de prueba ara comprobar que es efectivo
 x_train_preprocesado = preprocesado.fit_transform(x_train)
 
@@ -241,6 +245,10 @@ clasificaciones.append([("Regresión Logística",
 clasificaciones.append([("SGD", SGDClassifier(loss = 'hinge',
                                               penalty = 'l2',
                                               max_iter=500))])
+
+clasificaciones.append([("SVM", SVC())])
+
+clasificaciones.append([("RandomForest", RandomForestClassifier())])
 
 #Elegimos el mejor modelo (y mostramos las puntuaciones de cada modelo)
 mejor_clasificacion = seleccionar_mejor_modelo(clasificaciones, x_train, y_train, x_test, y_test)
