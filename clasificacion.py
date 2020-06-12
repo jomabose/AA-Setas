@@ -19,7 +19,6 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OrdinalEncoder
-from sklearn.manifold import LocallyLinearEmbedding
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 
@@ -152,30 +151,40 @@ print("Preprocesado\n")
 
 # Preprocesamiento a realizar, usamos Pipeline para encadenar varios procesos
 
+#Preprocesamientos a utilizar
+preprocesamientos = []
 
-preprocesamiento = [('estandarizar', StandardScaler()),
+#Preprocesamiento 0
+preprocesamientos.append([('estandarizar', StandardScaler()),
                     ('var', VarianceThreshold(0.05)),
                     ('polinomio grado 2', PolynomialFeatures(2,interaction_only=True)),
                     ('estandarizar 2', StandardScaler()),
-                    ('PCA', PCA(n_components=0.95)),
-                    ('estandarizar 3', StandardScaler())]
+                    ('PCA 2', PCA(n_components=0.99)),
+                    ('estandarizar 3', StandardScaler())])
 
-#preprocesado = Pipeline(preprocesamiento)
-preprocesado = LocallyLinearEmbedding()
-# Realizamos un preprocesado de prueba ara comprobar que es efectivo
-x_train_preprocesado = preprocesado.fit_transform(x_train)
+#Preprocesamiento 1
+preprocesamientos.append([('estandarizar', StandardScaler())])
+
+
 
 print("Mostramos que el preprocesamiento ha sido efectivo.\n ")
 print("Media de x_train antes del preprocesado: ", x_train.mean())
 print("Varianza de x_train antes del preprocesado: ", x_train.std())
 print("Número de características de cada dato antes del preprocesado: ", x_train.shape[1])
-print("Media de x_train tras el preprocesado: ", x_train_preprocesado.mean())
-print("Varianza de x_train tras el preprocesado: ", x_train_preprocesado.std())
-print("Número de características de cada dato después del preprocesado: ", x_train_preprocesado.shape[1])
-print("\nMatriz de correlación antes del preprocesado")
+print("Matriz de correlación antes del preprocesado")
 grafica_matriz_correlacion(x_train)
-print("\nMatriz de correlación después del preprocesado")
-grafica_matriz_correlacion(x_train_preprocesado)
+
+for i in range(len(preprocesamientos)):
+    preprocesado = Pipeline(preprocesamientos[i])
+    x_train_preprocesado = preprocesado.fit_transform(x_train)
+    print("\nPreprocesamiento ", i)
+    print("Media de x_train tras el preprocesado: ", x_train_preprocesado.mean())
+    print("Varianza de x_train tras el preprocesado: ", x_train_preprocesado.std())
+    print("Número de características de cada dato después del preprocesado: ", x_train_preprocesado.shape[1])
+    print("Matriz de correlación después del preprocesado")
+    grafica_matriz_correlacion(x_train_preprocesado)
+
+
 
 input("\n--- Pulsar tecla para continuar ---\n")
 
@@ -196,7 +205,7 @@ def puntuacion_precision(clasificador, x, y):
     return accuracy_score(y, y_pred)
   
 # Devuelve la clasificación del modelo que obtenga una mayor puntuación en Accuracy      
-def seleccionar_mejor_modelo(clasificaciones, x_train, y_train, x_val, y_val, mostrar_puntuacion=True):
+def seleccionar_mejor_modelo(preprocesamientos, clasificaciones, x_train, y_train, x_val, y_val, mostrar_puntuacion=True):
     """Parámetros:
        clasificaciones: array con las clasificaciones que usar en el modelo
        x_train: conjunto de carácteristicas predictivas de los datos de entrenamiento
@@ -207,27 +216,27 @@ def seleccionar_mejor_modelo(clasificaciones, x_train, y_train, x_val, y_val, mo
                            (True por defecto)
      """
     mejor_puntuacion = 0
-    indice_mejor_modelo = 0 
     for i in range(len(clasificaciones)):
-        # Cada clasificador está compuesto del preprocesamiento más la clasificación
-        clasificador = Pipeline(preprocesamiento + clasificaciones[i])
-        # Entrenamos el modelo según los datos de entrenamiento
-        clasificador.fit(x_train, y_train)
-        # Obtenemos las puntuaciones 
-        puntuacion_train = puntuacion_precision(clasificador, x_train, y_train)
-        puntuacion_val = puntuacion_precision(clasificador, x_val, y_val)
-        # Si la puntuación es la mejor, actualizamos el mejor modelo
-        if(puntuacion_val > mejor_puntuacion):
-            mejor_puntuacion = puntuacion_val
-            indice_mejor_modelo = i
-        # si es True, entonces mostramos las puntuaciones del modelo
-        if( mostrar_puntuacion):
-            print("Puntuación en el clasificador de ", clasificaciones[i][0][0])
-            print("Precisión en training: ", puntuacion_train)
-            print("Precisión en validación: ", puntuacion_val)
-            print("\n")
+        for j in range(len(preprocesamientos)):
+            # Cada clasificador está compuesto del preprocesamiento más la clasificación
+            clasificador = Pipeline(preprocesamientos[j] + clasificaciones[i])
+            # Entrenamos el modelo según los datos de entrenamiento
+            clasificador.fit(x_train, y_train)
+            # Obtenemos las puntuaciones 
+            puntuacion_train = puntuacion_precision(clasificador, x_train, y_train)
+            puntuacion_val = puntuacion_precision(clasificador, x_val, y_val)
+            # Si la puntuación es la mejor, actualizamos el mejor modelo
+            if(puntuacion_val > mejor_puntuacion):
+                mejor_puntuacion = puntuacion_val
+                mejor_clasificador = clasificador
+            # si es True, entonces mostramos las puntuaciones del modelo
+            if( mostrar_puntuacion):
+                print("Puntuación en el clasificador de {} con el preprocesamiento {}".format( clasificaciones[i][0][0], j))
+                print("Precisión en training: ", puntuacion_train)
+                print("Precisión en validación: ", puntuacion_val)
+                print("\n")
         
-    return clasificaciones[indice_mejor_modelo]
+    return mejor_clasificador
 
 #Clasificaciones a utilizar
 clasificaciones = []
@@ -245,14 +254,14 @@ clasificaciones.append([("Regresión Logística",
 clasificaciones.append([("SGD", SGDClassifier(loss = 'hinge',
                                               penalty = 'l2',
                                               max_iter=500))])
-
+    
 clasificaciones.append([("SVM", SVC())])
 
 clasificaciones.append([("RandomForest", RandomForestClassifier())])
 
 #Elegimos el mejor modelo (y mostramos las puntuaciones de cada modelo)
-mejor_clasificacion = seleccionar_mejor_modelo(clasificaciones, x_train, y_train, x_test, y_test)
-print("\nEl mejor clasificador ha sido ", mejor_clasificacion[0])
+mejor_clasificador = seleccionar_mejor_modelo(preprocesamientos, clasificaciones, x_train, y_train, x_test, y_test)
+print("\nEl mejor clasificador ha sido ", mejor_clasificador)
 
 input("\n--- Pulsar tecla para continuar ---\n")
 
@@ -261,14 +270,15 @@ input("\n--- Pulsar tecla para continuar ---\n")
 ###############################################################################
 
 # Volvemos a entrenar pero esta vez usamos el conjunto train original (train+validación) para entrenar el modelo
-print("Ahora entrenamos el mejor clasificador con el conjunto de training+validación:")
-mejor_clasificador = Pipeline(preprocesamiento + mejor_clasificacion)
+
+print("Errores del mejor clasificador:")
+#mejor_clasificador = Pipeline(preprocesamiento + mejor_clasificacion)
 mejor_clasificador.fit(x_train, y_train)
 
-print("Error en training+validación: ", 1-puntuacion_precision(mejor_clasificador, x_train, y_train))
+print("Error en training: ", 1-puntuacion_precision(mejor_clasificador, x_train, y_train))
 print("Error en test: ", 1-puntuacion_precision(mejor_clasificador, x_test, y_test))
 grafica_matriz_confusion(mejor_clasificador, x_test, y_test, "Matriz de confusión en el conjunto test")
 
 print("\nEstimamos el error de Eout mediante validación cruzada")
-puntuaciones = cross_validate(mejor_clasificador, x_train, y_train, scoring=('accuracy'), cv=5)
+puntuaciones = cross_validate(mejor_clasificador, x_data, y_data, scoring=('accuracy'), cv=5)
 print("Media de Eval tras validación cruzada: ", 1 - np.mean(puntuaciones['test_score']))
