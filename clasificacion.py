@@ -18,6 +18,7 @@ from sklearn.model_selection import cross_validate
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OrdinalEncoder
 
 # Fijamos la semilla (19)
 np.random.seed(19)
@@ -27,11 +28,11 @@ np.random.seed(19)
 ###############################################################################
 
 # Muestra una gŕafica de barras de la distribución de clases según las etiquetas
-def grafica_distribucion_clases(y, titulo=None, num_clases=10):
+def grafica_distribucion_clases(y, titulo=None, num_clases=2):
    """Parámetros:
        y: etiquetas de los datos
        titulo: titulo del grafico (por defecto None)
-       num_classes: número de clases distintas en los datos (por defecto 10)
+       num_classes: número de clases distintas en los datos (por defecto 2)
      """
 
    fig, ax = plt.subplots()
@@ -95,15 +96,16 @@ def readData(file, delimiter=',', datatype = np.dtype(np.unicode)):
        datatype: tipo de datos que leemos (por defecto se leen strings)
      """	
    data = np.genfromtxt(fname = file, dtype = datatype, delimiter = delimiter)
-           
-   x = data[:, :-1]
-   x = np.delete(x,11,1) #Eliminamos la característica de la columna 11, porque le faltan el 30.5% de los valores
    
-   y = data[:, -1]
+   data = np.delete(data, 11, 1) # Eliminamos la característica de la columna 11, porque le faltan el 30.5% de los valores
+   data = OrdinalEncoder().fit_transform(data).astype('float64') # Pasamos los valores nominales a ordinales 
+   
+   x = data[:, 1:-1]
+   y = data[:, 0]
 	
    return x, y
 
-# Funcion para eliminar características donde faltan más del 20% de los valores
+# Funcion ver el porcentaje de valores perdidos en cada característica
 def valoresPerdidos(data):
    """Parámetros:
        datos: datos
@@ -125,23 +127,17 @@ def valoresPerdidos(data):
 
 # Lectura de los datos 
 x_data, y_data = readData("./datos/agaricus-lepiota.data")
-valoresPerdidos(x_data)
-
-input("\n--- Pulsar tecla para continuar ---\n")
 
 
-# Separación de los datos de entrenamiento en entrenamiento (80%) y validación (20%)
-# El porcentaje es respecto del conjunto train original
-x_train, x_val, y_train, y_val = train_test_split(x_data, y_data, test_size=0.2, stratify=y_train_original)
+# Separación de los datos de entrenamiento en entrenamiento (80%) y test (20%)
+x_train, x_test, y_train, y_test = train_test_split(x_data, y_data, test_size=0.2, stratify=y_data)
 
 print("Mostramos la distribución de clases en cada conjunto: \n")
 grafica_distribucion_clases(y_train, "Distribución de clases en Entrenamiento")
-grafica_distribucion_clases(y_val, "Distribución de clases en Validación")
 grafica_distribucion_clases(y_test, "Distribución de clases en Test")
 
-print("Porcentaje de datos en entrenamiento (%): ", 100*len(x_train)/(len(x_train_original)+len(x_test)))
-print("Porcentaje de datos en validación (%): ", 100*len(x_val)/(len(x_train_original)+len(x_test)))
-print("Porcentaje de datos en test (%): ", 100*len(x_test)/(len(x_train_original)+len(x_test)))
+print("Porcentaje de datos en entrenamiento (%): ", 100*len(x_train)/(len(x_data)))
+print("Porcentaje de datos en test (%): ", 100*len(x_test)/(len(x_data)))
 
 input("\n--- Pulsar tecla para continuar ---\n")
 
@@ -152,9 +148,10 @@ input("\n--- Pulsar tecla para continuar ---\n")
 print("Preprocesado\n")
 
 # Preprocesamiento a realizar, usamos Pipeline para encadenar varios procesos
+
 preprocesamiento = [('estandarizar', StandardScaler()),
-                    ("var", VarianceThreshold(0.05)),
-                    ("polinomio grado 2", PolynomialFeatures(2,interaction_only=True)),
+                    ('var', VarianceThreshold(0.05)),
+                    ('polinomio grado 2', PolynomialFeatures(2,interaction_only=True)),
                     ('estandarizar 2', StandardScaler()),
                     ('PCA', PCA(n_components=0.95)),
                     ('estandarizar 3', StandardScaler())]
@@ -246,7 +243,7 @@ clasificaciones.append([("SGD", SGDClassifier(loss = 'hinge',
                                               max_iter=500))])
 
 #Elegimos el mejor modelo (y mostramos las puntuaciones de cada modelo)
-mejor_clasificacion = seleccionar_mejor_modelo(clasificaciones, x_train, y_train, x_val, y_val)
+mejor_clasificacion = seleccionar_mejor_modelo(clasificaciones, x_train, y_train, x_test, y_test)
 print("\nEl mejor clasificador ha sido ", mejor_clasificacion[0])
 
 input("\n--- Pulsar tecla para continuar ---\n")
@@ -258,12 +255,12 @@ input("\n--- Pulsar tecla para continuar ---\n")
 # Volvemos a entrenar pero esta vez usamos el conjunto train original (train+validación) para entrenar el modelo
 print("Ahora entrenamos el mejor clasificador con el conjunto de training+validación:")
 mejor_clasificador = Pipeline(preprocesamiento + mejor_clasificacion)
-mejor_clasificador.fit(x_train_original, y_train_original)
+mejor_clasificador.fit(x_train, y_train)
 
-print("Error en training+validación: ", 1-puntuacion_precision(mejor_clasificador, x_train_original, y_train_original))
+print("Error en training+validación: ", 1-puntuacion_precision(mejor_clasificador, x_train, y_train))
 print("Error en test: ", 1-puntuacion_precision(mejor_clasificador, x_test, y_test))
 grafica_matriz_confusion(mejor_clasificador, x_test, y_test, "Matriz de confusión en el conjunto test")
 
 print("\nEstimamos el error de Eout mediante validación cruzada")
-puntuaciones = cross_validate(mejor_clasificador, x_train_original, y_train_original, scoring=('accuracy'), cv=5)
+puntuaciones = cross_validate(mejor_clasificador, x_train, y_train, scoring=('accuracy'), cv=5)
 print("Media de Eval tras validación cruzada: ", 1 - np.mean(puntuaciones['test_score']))
