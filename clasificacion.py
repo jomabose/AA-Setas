@@ -210,7 +210,8 @@ def puntuacion_precision(clasificador, x, y):
 # Devuelve la clasificación del modelo que obtenga una mayor puntuación en Accuracy mediante validación cruzada.
 # En el caso de que varios modelos empaten en la mejor puntuación,
 # entonces el mejor modelo será aquel que menos tiempo haya necesitado.
-def seleccionar_mejor_modelo(preprocesamientos, clasificaciones, x_train, y_train, mostrar_puntuacion=True):
+def seleccionar_mejor_modelo(preprocesamientos, clasificaciones, x_train, y_train, mostrar_puntuacion=True,
+                             mostrar_grafica=True):
     """Parámetros:
        preproceasmientos: array con los preprocesamientos que usar en el modelo
        clasificaciones: array con las clasificaciones que usar en el modelo
@@ -241,13 +242,18 @@ def seleccionar_mejor_modelo(preprocesamientos, clasificaciones, x_train, y_trai
                     mejor_puntuacion = puntuacion_media
                     mejor_clasificador = clasificador
                     mejor_tiempo = tiempo
+            # si es True, entonces mostramos la gráfica con la matriz de confusión
+            if( mostrar_grafica):
+                clasificador.fit(x_train, y_train)
+                grafica_matriz_confusion(clasificador, x_train, y_train,
+                                         "Matriz de confusión en el conjunto train del clasificador de {} con el preprocesamiento {}".format( clasificaciones[i][0][0], j))
             # si es True, entonces mostramos las puntuaciones y tiempos del modelo
             if( mostrar_puntuacion):
                 print("Puntuación en el clasificador de {} con el preprocesamiento {}".format( clasificaciones[i][0][0], j))
                 print("Precisión: %f (+/- %f)" % (puntuaciones.mean(), puntuaciones.std() * 2))
                 print("Tiempo transcurrido (s): ", tiempo)
                 print("\n")
-        
+                    
     return mejor_clasificador
 
 #Clasificaciones a utilizar
@@ -286,9 +292,9 @@ input("\n--- Pulsar tecla para continuar ---\n")
 print("Errores del mejor clasificador:")
 mejor_clasificador.fit(x_train, y_train)
 
+grafica_matriz_confusion(mejor_clasificador, x_test, y_test, "Matriz de confusión en el conjunto test")
 print("Error en training: ", 1-puntuacion_precision(mejor_clasificador, x_train, y_train))
 print("Error en test: ", 1-puntuacion_precision(mejor_clasificador, x_test, y_test))
-grafica_matriz_confusion(mejor_clasificador, x_test, y_test, "Matriz de confusión en el conjunto test")
 
 print("\nEstimamos el error de Eout mediante validación cruzada")
 puntuaciones = cross_validate(mejor_clasificador, x_train, y_train, scoring=('accuracy'), cv=5)
