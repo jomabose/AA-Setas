@@ -22,8 +22,7 @@ from sklearn.preprocessing import OrdinalEncoder
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import cross_val_score
-import timeit
-from sklearn.linear_model import Lasso
+import time
 
 
 # Fijamos la semilla (19)
@@ -208,7 +207,7 @@ def puntuacion_precision(clasificador, x, y):
     y_pred = clasificador.predict(x)
     return accuracy_score(y, y_pred)
   
-# Devuelve la clasificación del modelo que obtenga una mayor puntuación en Accuracy    .
+# Devuelve la clasificación del modelo que obtenga una mayor puntuación en Accuracy mediante validación cruzada.
 # En el caso de que varios modelos empaten en la mejor puntuación,
 # entonces el mejor modelo será aquel que menos tiempo haya necesitado.
 def seleccionar_mejor_modelo(preprocesamientos, clasificaciones, x_train, y_train, mostrar_puntuacion=True):
@@ -226,9 +225,9 @@ def seleccionar_mejor_modelo(preprocesamientos, clasificaciones, x_train, y_trai
             # Cada clasificador está compuesto del preprocesamiento más la clasificación
             clasificador = Pipeline(preprocesamientos[j] + clasificaciones[i])
             # Obtenemos las puntuaciones 
-            principio = timeit.timeit()
+            principio = time.time()
             puntuaciones = cross_val_score(clasificador, x_train, y_train, scoring=('accuracy'), cv=5)
-            final = timeit.timeit()
+            final = time.time()
             tiempo = final - principio
             puntuacion_media = np.mean(puntuaciones)
             # Si la puntuación es la mejor, actualizamos el mejor modelo
@@ -238,7 +237,7 @@ def seleccionar_mejor_modelo(preprocesamientos, clasificaciones, x_train, y_trai
                 mejor_tiempo = tiempo
             # Si la puntuación iguala a la mejor y ha tardado menos tiempo, actualizamos el mejor modelo
             if(puntuacion_media == mejor_puntuacion):
-                if(tiempo > mejor_tiempo):
+                if(tiempo < mejor_tiempo):
                     mejor_puntuacion = puntuacion_media
                     mejor_clasificador = clasificador
                     mejor_tiempo = tiempo
@@ -246,7 +245,7 @@ def seleccionar_mejor_modelo(preprocesamientos, clasificaciones, x_train, y_trai
             if( mostrar_puntuacion):
                 print("Puntuación en el clasificador de {} con el preprocesamiento {}".format( clasificaciones[i][0][0], j))
                 print("Precisión: %f (+/- %f)" % (puntuaciones.mean(), puntuaciones.std() * 2))
-                print("Tiempo transcurrido: ", tiempo)
+                print("Tiempo transcurrido (s): ", tiempo)
                 print("\n")
         
     return mejor_clasificador
