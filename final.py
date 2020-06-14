@@ -16,21 +16,20 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.linear_model import RidgeClassifier
 from sklearn.metrics import plot_confusion_matrix
 from sklearn.model_selection import cross_validate
-from sklearn.preprocessing import PolynomialFeatures
-from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OrdinalEncoder
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import cross_val_score
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.model_selection import GridSearchCV
-import time
+from sklearn.model_selection import learning_curve
+from sklearn.metrics import plot_precision_recall_curve
+from sklearn.metrics import plot_roc_curve
 
-
-# Fijamos la semilla (19)
-np.random.seed(1997)
+# Fijamos la semilla (1997)
+semilla=1997
+np.random.seed(semilla)
 
 ###############################################################################
 ######## FUNCIONES DE VISUALIZACIÓN DE GŔAFICAS
@@ -89,9 +88,155 @@ def grafica_matriz_confusion(clasificador, x, y, titulo = None):
 
    if(titulo is not None):
        disp.ax_.set_title(titulo)
-   plt.show()
 
    plt.show()
+   
+# Muestra la gŕafica Precisión-Recall
+def grafica_precision_recall(clasificador, x, y, titulo = '2-class Precision-Recall curve'):
+   """Parámetros:
+        clasificador: modelo clasificador 
+        x: conjunto de carácteristicas predictivas de los datos
+        y: etiquetas de los datos
+        titulo: titulo del grafico (por defecto '2-class Precision-Recall curve')
+   """
+   
+   disp = plot_precision_recall_curve(clasificador, x, y)
+
+   if(titulo is not None):
+       disp.ax_.set_title(titulo)
+       
+   plt.show()       
+ 
+# Muestra la gŕafica curva ROC    
+def grafica_roc(clasificador, x, y, titulo = 'Curva ROC'):
+   """Parámetros:
+        clasificador: modelo clasificador 
+        x: conjunto de carácteristicas predictivas de los datos
+        y: etiquetas de los datos
+        titulo: titulo del grafico (por defecto 'Curva ROC')
+   """
+
+   disp = plot_roc_curve(clasificador, x, y)
+
+   if(titulo is not None):
+       disp.ax_.set_title(titulo)
+       
+   plt.show()
+   
+# Código sacado de https://scikit-learn.org/stable/auto_examples/model_selection/plot_learning_curve.html#sphx-glr-auto-examples-model-selection-plot-learning-curve-py
+def plot_learning_curve(estimator, title, X, y, axes=None, ylim=None, cv=None,
+                        n_jobs=-1, train_sizes=np.linspace(.1, 1.0, 5)):
+    """
+    Generate 3 plots: the test and training learning curve, the training
+    samples vs fit times curve, the fit times vs score curve.
+
+    Parameters
+    ----------
+    estimator : object type that implements the "fit" and "predict" methods
+        An object of that type which is cloned for each validation.
+
+    title : string
+        Title for the chart.
+
+    X : array-like, shape (n_samples, n_features)
+        Training vector, where n_samples is the number of samples and
+        n_features is the number of features.
+
+    y : array-like, shape (n_samples) or (n_samples, n_features), optional
+        Target relative to X for classification or regression;
+        None for unsupervised learning.
+
+    axes : array of 3 axes, optional (default=None)
+        Axes to use for plotting the curves.
+
+    ylim : tuple, shape (ymin, ymax), optional
+        Defines minimum and maximum yvalues plotted.
+
+    cv : int, cross-validation generator or an iterable, optional
+        Determines the cross-validation splitting strategy.
+        Possible inputs for cv are:
+
+          - None, to use the default 5-fold cross-validation,
+          - integer, to specify the number of folds.
+          - :term:`CV splitter`,
+          - An iterable yielding (train, test) splits as arrays of indices.
+
+        For integer/None inputs, if ``y`` is binary or multiclass,
+        :class:`StratifiedKFold` used. If the estimator is not a classifier
+        or if ``y`` is neither binary nor multiclass, :class:`KFold` is used.
+
+        Refer :ref:`User Guide <cross_validation>` for the various
+        cross-validators that can be used here.
+
+    n_jobs : int or None, optional (default=None)
+        Number of jobs to run in parallel.
+        ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
+        ``-1`` means using all processors. See :term:`Glossary <n_jobs>`
+        for more details.
+
+    train_sizes : array-like, shape (n_ticks,), dtype float or int
+        Relative or absolute numbers of training examples that will be used to
+        generate the learning curve. If the dtype is float, it is regarded as a
+        fraction of the maximum size of the training set (that is determined
+        by the selected validation method), i.e. it has to be within (0, 1].
+        Otherwise it is interpreted as absolute sizes of the training sets.
+        Note that for classification the number of samples usually have to
+        be big enough to contain at least one sample from each class.
+        (default: np.linspace(0.1, 1.0, 5))
+    """
+    if axes is None:
+        _, axes = plt.subplots(3, 1, figsize=(8, 15))
+
+    axes[0].set_title(title)
+    if ylim is not None:
+        axes[0].set_ylim(*ylim)
+    axes[0].set_xlabel("Ejemplos de entrenamiento")
+    axes[0].set_ylabel("Puntuación")
+
+    train_sizes, train_scores, test_scores, fit_times, _ = \
+        learning_curve(estimator, X, y, cv=cv, n_jobs=n_jobs,
+                       train_sizes=train_sizes,
+                       return_times=True)
+    train_scores_mean = np.mean(train_scores, axis=1)
+    train_scores_std = np.std(train_scores, axis=1)
+    test_scores_mean = np.mean(test_scores, axis=1)
+    test_scores_std = np.std(test_scores, axis=1)
+    fit_times_mean = np.mean(fit_times, axis=1)
+    fit_times_std = np.std(fit_times, axis=1)
+
+    # Plot learning curve
+    axes[0].grid()
+    axes[0].fill_between(train_sizes, train_scores_mean - train_scores_std,
+                         train_scores_mean + train_scores_std, alpha=0.1,
+                         color="r")
+    axes[0].fill_between(train_sizes, test_scores_mean - test_scores_std,
+                         test_scores_mean + test_scores_std, alpha=0.1,
+                         color="g")
+    axes[0].plot(train_sizes, train_scores_mean, 'o-', color="r",
+                 label="Training score")
+    axes[0].plot(train_sizes, test_scores_mean, 'o-', color="g",
+                 label="Cross-validation score")
+    axes[0].legend(loc="best")
+
+    # Plot n_samples vs fit_times
+    axes[1].grid()
+    axes[1].plot(train_sizes, fit_times_mean, 'o-')
+    axes[1].fill_between(train_sizes, fit_times_mean - fit_times_std,
+                         fit_times_mean + fit_times_std, alpha=0.1)
+    axes[1].set_xlabel("Training examples")
+    axes[1].set_ylabel("fit_times")
+    axes[1].set_title("Scalability of the model")
+
+    # Plot fit_time vs score
+    axes[2].grid()
+    axes[2].plot(fit_times_mean, test_scores_mean, 'o-')
+    axes[2].fill_between(fit_times_mean, test_scores_mean - test_scores_std,
+                         test_scores_mean + test_scores_std, alpha=0.1)
+    axes[2].set_xlabel("fit_times")
+    axes[2].set_ylabel("Score")
+    axes[2].set_title("Performance of the model")
+
+    plt.show()
    
 ###############################################################################
 ######## LECTURA DE LOS DATOS Y SEPARACIÓN EN TRAIN, VALIDACIÓN Y TEST
@@ -250,9 +395,13 @@ def seleccionar_mejor_modelo(preprocesamientos, clasificaciones, parametros, x_t
                     mejor_tiempo = tiempo
             # si es True, entonces mostramos la gráfica con la matriz de confusión
             if( mostrar_grafica):
-                clasificador.fit(x_train, y_train)
-                grafica_matriz_confusion(clasificador, x_train, y_train,
+                grafica_matriz_confusion(clasificador.best_estimator_, x_train, y_train,
                                          "Matriz de confusión en el conjunto train del clasificador de {}".format( clasificaciones[i][0][0]))
+                grafica_precision_recall(clasificador.best_estimator_, x_train, y_train,
+                                         "Gráfica Precision-Recall en el conjunto train del clasificador de {}".format( clasificaciones[i][0][0]))
+                grafica_roc(clasificador, x_train, y_train,
+                                         "Gráfica Curva ROC en el conjunto train del clasificador de {}".format( clasificaciones[i][0][0]))
+                plot_learning_curve(clasificador.best_estimator_, "Curvas de Aprendizaje del clasificador de {}".format( clasificaciones[i][0][0]), x_train, y_train)
             # si es True, entonces mostramos la puntuación y tiempo del modelo
             if( mostrar_puntuacion):
                 print("Puntuación en el clasificador de {} con los parámetros {}".format( clasificaciones[i][0][0], clasificador.best_params_))
@@ -260,7 +409,7 @@ def seleccionar_mejor_modelo(preprocesamientos, clasificaciones, parametros, x_t
                 print("Tiempo transcurrido (s): ", tiempo)
                 print("\n")
                     
-    return mejor_clasificador
+    return mejor_clasificador.best_estimator_
 
 #Clasificaciones a utilizar
 clasificaciones = []
@@ -268,55 +417,49 @@ clasificaciones = []
 parametros = []
 
 clasificaciones.append([("Ridge", RidgeClassifier())])
-parametros.append({'Ridge__alpha':[1, 10, 100], 'Ridge__solver':['saga'],'Ridge__max_iter':[500]})
+parametros.append({'Ridge__alpha':[1, 10, 100],
+                   'Ridge__solver':['saga'],
+                   'Ridge__max_iter':[500],
+                   'Ridge__random_state':[semilla]})
 
 clasificaciones.append([("RegresiónLogística",LogisticRegression())])
 parametros.append({'RegresiónLogística__penalty':['l1', 'l2'], 
                    'RegresiónLogística__C':[1, 0.1, 0.01, 0.001],
                    'RegresiónLogística__solver':['saga'],
                    'RegresiónLogística__max_iter':[500],
-                   'RegresiónLogística__multi_class':['ovr']})
+                   'RegresiónLogística__multi_class':['ovr'],
+                   'RegresiónLogística__random_state':[semilla]})
 
 clasificaciones.append([("SGD", SGDClassifier())])
 parametros.append({'SGD__loss':['hinge'],
                    'SGD__penalty':['l1', 'l2'],
-                   'SGD__max_iter':[500]})
+                   'SGD__alpha':[0.01, 0.005, 0.001, 0.0005, 0.0001, 0.00005, 0.00001],
+                   'SGD__max_iter':[500],
+                   'SGD__random_state':[semilla]})
     
 clasificaciones.append([("SVM", SVC())])
 parametros.append({'SVM__C':[1, 0.1, 0.01, 0.001],
-                   'SVM__kernel':['rbf', 'poly']})
+                   'SVM__kernel':['rbf', 'poly'],
+                   'SVM__random_state':[semilla]})
 
 clasificaciones.append([("RandomForest", RandomForestClassifier())])
 parametros.append({'RandomForest__n_estimators':[1, 2, 3, 4, 5, 10, 50, 100],
-                   'RandomForest__criterion':['gini', 'entropy']})
+                   'RandomForest__criterion':['gini', 'entropy'],
+                   'RandomForest__random_state':[semilla]})
 
-"""
-clasificaciones.append([("Perceptron multicapa", MLPClassifier(hidden_layer_sizes=(50, 1),max_iter=500))])
-
-Puntuación en el clasificador de Perceptron multicapa con el preprocesamiento 0
-Precisión: 0.999385 (+/- 0.001507)
-Tiempo transcurrido (s):  17.988545179367065
-
-Puntuación en el clasificador de Perceptron multicapa con el preprocesamiento 1
-Precisión: 0.987998 (+/- 0.010687)
-Tiempo transcurrido (s):  12.822283744812012
-"""
-
-"""
+clasificaciones.append([("Perceptron", MLPClassifier(hidden_layer_sizes=(50, 1),max_iter=500))])
+parametros.append({'Perceptron__hidden_layer_sizes':[(50,), (60,), (70,), (80,), (90,), (100,)],
+                   'Perceptron__max_iter':[500],
+                   'Perceptron__random_state':[semilla]})
+    
 clasificaciones.append([("Boosting", GradientBoostingClassifier())])
-
-Puntuación en el clasificador de Boosting con el preprocesamiento 0
-Precisión: 0.998769 (+/- 0.002303)
-Tiempo transcurrido (s):  61.28906488418579
-
-Puntuación en el clasificador de Boosting con el preprocesamiento 1
-Precisión: 1.000000 (+/- 0.000000)
-Tiempo transcurrido (s):  1.681703805923462
-"""
+parametros.append({'Boosting__learning_rate':[0.5, 0.25, 0.1, 0.05, 0.01],
+                   'Boosting__n_estimators':[10, 50, 100, 200, 500],
+                   'Boosting__random_state':[semilla]})
 
 #Elegimos el mejor modelo (y mostramos las puntuaciones de cada modelo)
 mejor_clasificador = seleccionar_mejor_modelo(preprocesamientos, clasificaciones, parametros, x_train, y_train)
-print("\nEl mejor clasificador ha sido ", mejor_clasificador.best_estimator_)
+print("\nEl mejor clasificador ha sido ", mejor_clasificador)
 
 input("\n--- Pulsar tecla para continuar ---\n")
 
@@ -327,9 +470,14 @@ input("\n--- Pulsar tecla para continuar ---\n")
 # Volvemos a entrenar pero esta vez usamos el conjunto train original (train+validación) para entrenar el modelo
 
 print("Errores del mejor clasificador:")
-mejor_clasificador.fit(x_train, y_train)
+#mejor_clasificador.fit(x_train, y_train)
 
 grafica_matriz_confusion(mejor_clasificador, x_test, y_test, "Matriz de confusión en el conjunto test")
+grafica_precision_recall(mejor_clasificador, x_test, y_test, "Gráfica Precision-Recall en el conjunto test")
+grafica_roc(mejor_clasificador, x_test, y_test, "Gráfica Curva ROC en el conjunto test")
+plot_learning_curve(mejor_clasificador, "Curvas de Aprendizaje del mejor clasificador", x_train, y_train)
+            
+
 print("Error en training: ", 1-puntuacion_precision(mejor_clasificador, x_train, y_train))
 print("Error en test: ", 1-puntuacion_precision(mejor_clasificador, x_test, y_test))
 
