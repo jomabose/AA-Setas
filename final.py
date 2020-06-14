@@ -14,6 +14,7 @@ from sklearn.feature_selection import VarianceThreshold
 from sklearn.metrics import accuracy_score
 from sklearn.linear_model import SGDClassifier
 from sklearn.linear_model import RidgeClassifier
+from sklearn.dummy import DummyClassifier
 from sklearn.metrics import plot_confusion_matrix
 from sklearn.model_selection import cross_validate
 from sklearn.pipeline import Pipeline
@@ -90,15 +91,16 @@ def grafica_matriz_confusion(clasificador, x, y, titulo = None):
        disp.ax_.set_title(titulo)
 
    plt.show()
-   
+
+"""
 # Muestra la gŕafica Precisión-Recall
 def grafica_precision_recall(clasificador, x, y, titulo = '2-class Precision-Recall curve'):
-   """Parámetros:
+   "Parámetros:
         clasificador: modelo clasificador 
         x: conjunto de carácteristicas predictivas de los datos
         y: etiquetas de los datos
         titulo: titulo del grafico (por defecto '2-class Precision-Recall curve')
-   """
+   "
    
    disp = plot_precision_recall_curve(clasificador, x, y)
 
@@ -106,15 +108,16 @@ def grafica_precision_recall(clasificador, x, y, titulo = '2-class Precision-Rec
        disp.ax_.set_title(titulo)
        
    plt.show()       
- 
+
+
 # Muestra la gŕafica curva ROC    
 def grafica_roc(clasificador, x, y, titulo = 'Curva ROC'):
-   """Parámetros:
+   "Parámetros:
         clasificador: modelo clasificador 
         x: conjunto de carácteristicas predictivas de los datos
         y: etiquetas de los datos
         titulo: titulo del grafico (por defecto 'Curva ROC')
-   """
+   "
 
    disp = plot_roc_curve(clasificador, x, y)
 
@@ -122,8 +125,10 @@ def grafica_roc(clasificador, x, y, titulo = 'Curva ROC'):
        disp.ax_.set_title(titulo)
        
    plt.show()
+"""
    
 # Código sacado de https://scikit-learn.org/stable/auto_examples/model_selection/plot_learning_curve.html#sphx-glr-auto-examples-model-selection-plot-learning-curve-py
+# Muestras las gráficas de la curva de aprendizaje
 def plot_learning_curve(estimator, title, X, y, axes=None, ylim=None, cv=None,
                         n_jobs=-1, train_sizes=np.linspace(.1, 1.0, 5)):
     """
@@ -213,9 +218,9 @@ def plot_learning_curve(estimator, title, X, y, axes=None, ylim=None, cv=None,
                          test_scores_mean + test_scores_std, alpha=0.1,
                          color="g")
     axes[0].plot(train_sizes, train_scores_mean, 'o-', color="r",
-                 label="Training score")
+                 label="Puntuación de entrenamiento")
     axes[0].plot(train_sizes, test_scores_mean, 'o-', color="g",
-                 label="Cross-validation score")
+                 label="Puntuación de validación cruzada")
     axes[0].legend(loc="best")
 
     # Plot n_samples vs fit_times
@@ -223,18 +228,18 @@ def plot_learning_curve(estimator, title, X, y, axes=None, ylim=None, cv=None,
     axes[1].plot(train_sizes, fit_times_mean, 'o-')
     axes[1].fill_between(train_sizes, fit_times_mean - fit_times_std,
                          fit_times_mean + fit_times_std, alpha=0.1)
-    axes[1].set_xlabel("Training examples")
-    axes[1].set_ylabel("fit_times")
-    axes[1].set_title("Scalability of the model")
+    axes[1].set_xlabel("Ejemplos de entrenamiento")
+    axes[1].set_ylabel("Tiempos de ajuste")
+    axes[1].set_title("Escalabilidad del modelo")
 
     # Plot fit_time vs score
     axes[2].grid()
     axes[2].plot(fit_times_mean, test_scores_mean, 'o-')
     axes[2].fill_between(fit_times_mean, test_scores_mean - test_scores_std,
                          test_scores_mean + test_scores_std, alpha=0.1)
-    axes[2].set_xlabel("fit_times")
-    axes[2].set_ylabel("Score")
-    axes[2].set_title("Performance of the model")
+    axes[2].set_xlabel("Tiempos de ajuste")
+    axes[2].set_ylabel("Puntuación")
+    axes[2].set_title("Rendimiento del modelo")
 
     plt.show()
    
@@ -303,21 +308,7 @@ print("Preprocesado\n")
 
 # Preprocesamiento a realizar, usamos Pipeline para encadenar varios procesos
 
-#Preprocesamientos a utilizar
-preprocesamientos = []
-
-"""
-#Preprocesamiento 0
-preprocesamientos.append([('estandarizar', StandardScaler()),
-                    ('var', VarianceThreshold(0.05)),
-                    ('polinomio grado 2', PolynomialFeatures(2,interaction_only=True)),
-                    ('estandarizar 2', StandardScaler()),
-                    ('PCA', PCA(n_components=0.99)),
-                    ('estandarizar 3', StandardScaler())])
-"""
-
-#Preprocesamiento 1
-preprocesamientos.append([('var', VarianceThreshold()),
+preprocesamiento = ([('var', VarianceThreshold()),
                           ('estandarizar', StandardScaler())])
 
 
@@ -329,15 +320,13 @@ print("Número de características de cada dato antes del preprocesado: ", x_tra
 print("Matriz de correlación antes del preprocesado")
 grafica_matriz_correlacion(x_train)
 
-for i in range(len(preprocesamientos)):
-    preprocesado = Pipeline(preprocesamientos[i])
-    x_train_preprocesado = preprocesado.fit_transform(x_train)
-    print("\nPreprocesamiento ", i)
-    print("Media de x_train tras el preprocesado: ", x_train_preprocesado.mean())
-    print("Varianza de x_train tras el preprocesado: ", x_train_preprocesado.std())
-    print("Número de características de cada dato después del preprocesado: ", x_train_preprocesado.shape[1])
-    print("Matriz de correlación después del preprocesado")
-    grafica_matriz_correlacion(x_train_preprocesado)
+preprocesado = Pipeline(preprocesamiento)
+x_train_preprocesado = preprocesado.fit_transform(x_train)
+print("\nMedia de x_train tras el preprocesado: ", x_train_preprocesado.mean())
+print("Varianza de x_train tras el preprocesado: ", x_train_preprocesado.std())
+print("Número de características de cada dato después del preprocesado: ", x_train_preprocesado.shape[1])
+print("Matriz de correlación después del preprocesado")
+grafica_matriz_correlacion(x_train_preprocesado)
 
 
 
@@ -362,7 +351,7 @@ def puntuacion_precision(clasificador, x, y):
 # Devuelve la clasificación del modelo que obtenga una mayor puntuación en Accuracy mediante validación cruzada.
 # En el caso de que varios modelos empaten en la mejor puntuación,
 # entonces el mejor modelo será aquel que menos tiempo haya necesitado.
-def seleccionar_mejor_modelo(preprocesamientos, clasificaciones, parametros, x_train, y_train, mostrar_puntuacion=True,
+def seleccionar_mejor_modelo(preprocesamiento, clasificaciones, parametros, x_train, y_train, mostrar_puntuacion=True,
                              mostrar_grafica=True):
     """Parámetros:
        preproceasmientos: array con los preprocesamientos que usar en el modelo
@@ -374,41 +363,42 @@ def seleccionar_mejor_modelo(preprocesamientos, clasificaciones, parametros, x_t
      """
     mejor_puntuacion = -1
     for i in range(len(clasificaciones)):
-        for j in range(len(preprocesamientos)):
-            # Cada clasificador está compuesto del preprocesamiento más la clasificación
-            # Usamos GridSearchCV para quedarnos con el clasificador cuyos parámetros obtengan mejor resultado
-            clasificador = GridSearchCV(Pipeline(preprocesamientos[j] + clasificaciones[i]), 
-                                        parametros[i], scoring=('accuracy'), cv=5, n_jobs=-1).fit(x_train, y_train)
-            # Obtenemos la puntuación y el tiempo
-            puntuacion = clasificador.best_score_
-            tiempo = clasificador.refit_time_
-            # Si la puntuación es la mejor, actualizamos el mejor modelo
-            if(puntuacion > mejor_puntuacion):
+        # Cada clasificador está compuesto del preprocesamiento más la clasificación
+        # Usamos GridSearchCV para quedarnos con el clasificador cuyos parámetros obtengan mejor resultado
+        clasificador = GridSearchCV(Pipeline(preprocesamiento + clasificaciones[i]), 
+                                    parametros[i], scoring=('accuracy'), cv=5, n_jobs=-1).fit(x_train, y_train)
+        # Obtenemos la puntuación y el tiempo
+        puntuacion = clasificador.best_score_
+        tiempo = clasificador.refit_time_
+        # Si la puntuación es la mejor, actualizamos el mejor modelo
+        if(puntuacion > mejor_puntuacion):
+            mejor_puntuacion = puntuacion
+            mejor_clasificador = clasificador
+            mejor_tiempo = tiempo
+        # Si la puntuación iguala a la mejor y ha tardado menos tiempo, actualizamos el mejor modelo
+        if(puntuacion == mejor_puntuacion):
+            if(tiempo < mejor_tiempo):
                 mejor_puntuacion = puntuacion
                 mejor_clasificador = clasificador
                 mejor_tiempo = tiempo
-            # Si la puntuación iguala a la mejor y ha tardado menos tiempo, actualizamos el mejor modelo
-            if(puntuacion == mejor_puntuacion):
-                if(tiempo < mejor_tiempo):
-                    mejor_puntuacion = puntuacion
-                    mejor_clasificador = clasificador
-                    mejor_tiempo = tiempo
-            # si es True, entonces mostramos la gráfica con la matriz de confusión
-            if( mostrar_grafica):
-                grafica_matriz_confusion(clasificador.best_estimator_, x_train, y_train,
-                                         "Matriz de confusión en el conjunto train del clasificador de {}".format( clasificaciones[i][0][0]))
-                grafica_precision_recall(clasificador.best_estimator_, x_train, y_train,
-                                         "Gráfica Precision-Recall en el conjunto train del clasificador de {}".format( clasificaciones[i][0][0]))
-                grafica_roc(clasificador, x_train, y_train,
-                                         "Gráfica Curva ROC en el conjunto train del clasificador de {}".format( clasificaciones[i][0][0]))
-                plot_learning_curve(clasificador.best_estimator_, "Curvas de Aprendizaje del clasificador de {}".format( clasificaciones[i][0][0]), x_train, y_train)
-            # si es True, entonces mostramos la puntuación y tiempo del modelo
-            if( mostrar_puntuacion):
-                print("Puntuación en el clasificador de {} con los parámetros {}".format( clasificaciones[i][0][0], clasificador.best_params_))
-                print("Precisión: ",  puntuacion)
-                print("Tiempo transcurrido (s): ", tiempo)
-                print("\n")
-                    
+        # si es True, entonces mostramos la gráfica con la matriz de confusión
+        if( mostrar_grafica):
+            grafica_matriz_confusion(clasificador.best_estimator_, x_train, y_train,
+                                     "Matriz de confusión en el conjunto train del clasificador de {}".format( clasificaciones[i][0][0]))
+            """
+            grafica_precision_recall(clasificador.best_estimator_, x_train, y_train,
+                                     "Gráfica Precision-Recall en el conjunto train del clasificador de {}".format( clasificaciones[i][0][0]))
+            grafica_roc(clasificador, x_train, y_train,
+                            "Gráfica Curva ROC en el conjunto train del clasificador de {}".format( clasificaciones[i][0][0]))
+            """
+            plot_learning_curve(clasificador.best_estimator_, "Curvas de Aprendizaje del clasificador de {}".format( clasificaciones[i][0][0]), x_train, y_train)
+        # si es True, entonces mostramos la puntuación y tiempo del modelo
+        if( mostrar_puntuacion):
+            print("Puntuación en el clasificador de {} con los parámetros {}".format( clasificaciones[i][0][0], clasificador.best_params_))
+            print("Precisión: ",  puntuacion)
+            print("Tiempo transcurrido (s): ", tiempo)
+            print("\n")
+            
     return mejor_clasificador.best_estimator_
 
 #Clasificaciones a utilizar
@@ -416,12 +406,19 @@ clasificaciones = []
 #Parámetros a probar el clasificador
 parametros = []
 
+"""
 clasificaciones.append([("Ridge", RidgeClassifier())])
 parametros.append({'Ridge__alpha':[1, 10, 100],
                    'Ridge__solver':['saga'],
                    'Ridge__max_iter':[500],
                    'Ridge__random_state':[semilla]})
+"""
 
+# Modelo Dummy para comparar con los otros modelos
+clasificaciones.append([('Dummy',DummyClassifier())])
+parametros.append({})
+
+# Modelos Lineales
 clasificaciones.append([("RegresiónLogística",LogisticRegression())])
 parametros.append({'RegresiónLogística__penalty':['l1', 'l2'], 
                    'RegresiónLogística__C':[1, 0.1, 0.01, 0.001],
@@ -437,6 +434,7 @@ parametros.append({'SGD__loss':['hinge'],
                    'SGD__max_iter':[500],
                    'SGD__random_state':[semilla]})
     
+# Modelos no lineales
 clasificaciones.append([("SVM", SVC())])
 parametros.append({'SVM__C':[1, 0.1, 0.01, 0.001],
                    'SVM__kernel':['rbf', 'poly'],
@@ -458,7 +456,7 @@ parametros.append({'Boosting__learning_rate':[0.5, 0.25, 0.1, 0.05, 0.01],
                    'Boosting__random_state':[semilla]})
 
 #Elegimos el mejor modelo (y mostramos las puntuaciones de cada modelo)
-mejor_clasificador = seleccionar_mejor_modelo(preprocesamientos, clasificaciones, parametros, x_train, y_train)
+mejor_clasificador = seleccionar_mejor_modelo(preprocesamiento, clasificaciones, parametros, x_train, y_train)
 print("\nEl mejor clasificador ha sido ", mejor_clasificador)
 
 input("\n--- Pulsar tecla para continuar ---\n")
@@ -469,15 +467,17 @@ input("\n--- Pulsar tecla para continuar ---\n")
 
 # Volvemos a entrenar pero esta vez usamos el conjunto train original (train+validación) para entrenar el modelo
 
-print("Errores del mejor clasificador:")
+
 #mejor_clasificador.fit(x_train, y_train)
 
-grafica_matriz_confusion(mejor_clasificador, x_test, y_test, "Matriz de confusión en el conjunto test")
+"""
 grafica_precision_recall(mejor_clasificador, x_test, y_test, "Gráfica Precision-Recall en el conjunto test")
 grafica_roc(mejor_clasificador, x_test, y_test, "Gráfica Curva ROC en el conjunto test")
 plot_learning_curve(mejor_clasificador, "Curvas de Aprendizaje del mejor clasificador", x_train, y_train)
-            
-
+"""   
+         
+print("Errores del mejor clasificador:")
+grafica_matriz_confusion(mejor_clasificador, x_test, y_test, "Matriz de confusión en el conjunto test")
 print("Error en training: ", 1-puntuacion_precision(mejor_clasificador, x_train, y_train))
 print("Error en test: ", 1-puntuacion_precision(mejor_clasificador, x_test, y_test))
 
