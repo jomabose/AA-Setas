@@ -455,15 +455,15 @@ parametros.append({'RandomForest__n_estimators':[1, 2, 3, 4, 5, 10, 50, 100],
                    'RandomForest__criterion':['gini', 'entropy'],
                    'RandomForest__random_state':[semilla]})
 
-clasificaciones.append([("Perceptron", MLPClassifier(hidden_layer_sizes=(50, 1),max_iter=500))])
-parametros.append({'Perceptron__hidden_layer_sizes':[(50,), (60,), (70,), (80,), (90,), (100,)],
-                   'Perceptron__max_iter':[500],
-                   'Perceptron__random_state':[semilla]})
+clasificaciones.append([("PerceptronMultiCapa", MLPClassifier(hidden_layer_sizes=(50, 1),max_iter=500))])
+parametros.append({'PerceptronMultiCapa__hidden_layer_sizes':[(50,), (60,), (70,), (80,), (90,), (100,)],
+                   'PerceptronMultiCapa__max_iter':[500],
+                   'PerceptronMultiCapa__random_state':[semilla]})
     
-clasificaciones.append([("Boosting", GradientBoostingClassifier())])
-parametros.append({'Boosting__learning_rate':[0.5, 0.25, 0.1, 0.05, 0.01],
-                   'Boosting__n_estimators':[10, 50, 100, 200, 500],
-                   'Boosting__random_state':[semilla]})
+clasificaciones.append([("GradientBoosting", GradientBoostingClassifier())])
+parametros.append({'GradientBoosting__learning_rate':[0.5, 0.25, 0.1, 0.05, 0.01],
+                   'GradientBoosting__n_estimators':[10, 50, 100, 200, 500],
+                   'GradientBoosting__random_state':[semilla]})
 
 #Elegimos el mejor modelo (y mostramos las puntuaciones de cada modelo)
 mejor_clasificador = seleccionar_mejor_modelo(preprocesamiento, clasificaciones, parametros, x_train, y_train)
