@@ -65,7 +65,14 @@ def grafica_matriz_correlacion(x, titulo=None):
 
    with np.errstate(invalid = 'ignore'):
       matriz_correlacion= np.abs(np.corrcoef(x, rowvar = False))
-  
+
+   # Número de parejas de características cuya correlación es mayor que 0.3
+   num = 0
+   for i in range(matriz_correlacion.shape[0]):
+       for j in range(i+1, matriz_correlacion.shape[1]):
+           if(matriz_correlacion[i][j] > 0.3):
+               num += 1
+               
    ax.set_xlabel("características")
    ax.set_ylabel("características")
    im = ax.matshow(matriz_correlacion)
@@ -74,6 +81,9 @@ def grafica_matriz_correlacion(x, titulo=None):
    if(titulo is not None):
        ax.title.set_text(titulo)
    plt.show()
+   
+   print("Número de parejas de características distintas cuya correlación es mayor que 0.3: ", num)
+
    
 # Muestra la matriz de confusión
 def grafica_matriz_confusion(clasificador, x, y, titulo = None):
@@ -308,8 +318,8 @@ print("Preprocesado\n")
 
 # Preprocesamiento a realizar, usamos Pipeline para encadenar varios procesos
 
-preprocesamiento = ([('var', VarianceThreshold()),
-                          ('estandarizar', StandardScaler())])
+preprocesamiento = ([('var', VarianceThreshold(0.05)),
+                     ('estandarizar', StandardScaler())])
 
 
 
