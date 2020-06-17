@@ -319,7 +319,7 @@ def seleccionar_mejor_modelo(preprocesamiento, clasificaciones, parametros, x_tr
         # Cada clasificador está compuesto del preprocesamiento más la clasificación
         # Usamos GridSearchCV para quedarnos con el clasificador cuyos parámetros obtengan mejor resultado
         clasificador = GridSearchCV(Pipeline(preprocesamiento + clasificaciones[i]), 
-                                    parametros[i], scoring=('accuracy'), cv=5, n_jobs=-1).fit(x_train, y_train)
+                                    parametros[i], scoring=('accuracy'), cv=5, n_jobs=-1,return_train_score=True).fit(x_train, y_train)
         # Obtenemos la puntuación y el tiempo
         puntuacion = clasificador.best_score_
         tiempo = clasificador.refit_time_
@@ -348,7 +348,8 @@ def seleccionar_mejor_modelo(preprocesamiento, clasificaciones, parametros, x_tr
         # si es True, entonces mostramos la puntuación y tiempo del modelo
         if( mostrar_puntuacion):
             print("Puntuación en el clasificador de {} con los parámetros {}".format( clasificaciones[i][0][0], clasificador.best_params_))
-            print("Puntuación Accuracy: ",  puntuacion)
+            print("Puntuación Accuracy CV train: ",  clasificador.cv_results_['mean_train_score'][clasificador.best_index_])
+            print("Puntuación Accuracy CV validation: ",  puntuacion)
             print("Tiempo transcurrido (s): ", tiempo)
             input("\n--- Pulsar tecla para continuar ---\n")
          
