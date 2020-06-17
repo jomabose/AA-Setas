@@ -163,7 +163,7 @@ def plot_learning_curve(estimator, title, X, y, axes=None, ylim=None, cv=None,
         (default: np.linspace(0.1, 1.0, 5))
     """
     if axes is None:
-        _, axes = plt.subplots(3, 1, figsize=(8, 15))
+        _, axes = plt.subplots(3, 1, figsize=(8, 20))
 
     axes[0].set_title(title)
     if ylim is not None:
@@ -351,7 +351,7 @@ def seleccionar_mejor_modelo(preprocesamiento, clasificaciones, parametros, x_tr
             print("Puntuación Accuracy: ",  puntuacion)
             print("Tiempo transcurrido (s): ", tiempo)
             input("\n--- Pulsar tecla para continuar ---\n")
-            
+         
     return mejor_clasificador.best_estimator_
 
 #Clasificaciones a utilizar
@@ -361,7 +361,7 @@ parametros = []
 
 # Modelo Dummy para comparar con los otros modelos
 clasificaciones.append([('Dummy',DummyClassifier())])
-parametros.append({})
+parametros.append({'Dummy__random_state':[semilla]})
 
 # Modelos Lineales
 clasificaciones.append([("RegresiónLogística",LogisticRegression())])
@@ -382,7 +382,8 @@ parametros.append({'SGD__loss':['hinge'],
 # Modelos no lineales
 clasificaciones.append([("SVM", SVC())])
 parametros.append({'SVM__C':[1, 0.1, 0.01, 0.001],
-                   'SVM__kernel':['rbf', 'poly'],
+                   'SVM__gamma':[0.001, 0.01, 0.05, 0.1, 0.5, 1],
+                   'SVM__kernel':['rbf'],
                    'SVM__random_state':[semilla]})
 
 clasificaciones.append([("RandomForest", RandomForestClassifier())])
