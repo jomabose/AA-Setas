@@ -13,7 +13,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.feature_selection import VarianceThreshold
 from sklearn.metrics import accuracy_score
 from sklearn.linear_model import SGDClassifier
-from sklearn.linear_model import RidgeClassifier
 from sklearn.dummy import DummyClassifier
 from sklearn.metrics import plot_confusion_matrix
 from sklearn.model_selection import cross_validate
@@ -25,8 +24,6 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import learning_curve
-from sklearn.metrics import plot_precision_recall_curve
-from sklearn.metrics import plot_roc_curve
 
 # Fijamos la semilla (1997)
 semilla=1997
@@ -102,40 +99,6 @@ def grafica_matriz_confusion(clasificador, x, y, titulo = None):
 
    plt.show()
 
-"""
-# Muestra la gŕafica Precisión-Recall
-def grafica_precision_recall(clasificador, x, y, titulo = '2-class Precision-Recall curve'):
-   "Parámetros:
-        clasificador: modelo clasificador 
-        x: conjunto de carácteristicas predictivas de los datos
-        y: etiquetas de los datos
-        titulo: titulo del grafico (por defecto '2-class Precision-Recall curve')
-   "
-   
-   disp = plot_precision_recall_curve(clasificador, x, y)
-
-   if(titulo is not None):
-       disp.ax_.set_title(titulo)
-       
-   plt.show()       
-
-
-# Muestra la gŕafica curva ROC    
-def grafica_roc(clasificador, x, y, titulo = 'Curva ROC'):
-   "Parámetros:
-        clasificador: modelo clasificador 
-        x: conjunto de carácteristicas predictivas de los datos
-        y: etiquetas de los datos
-        titulo: titulo del grafico (por defecto 'Curva ROC')
-   "
-
-   disp = plot_roc_curve(clasificador, x, y)
-
-   if(titulo is not None):
-       disp.ax_.set_title(titulo)
-       
-   plt.show()
-"""
    
 # Código sacado de https://scikit-learn.org/stable/auto_examples/model_selection/plot_learning_curve.html#sphx-glr-auto-examples-model-selection-plot-learning-curve-py
 # Muestras las gráficas de la curva de aprendizaje
@@ -274,26 +237,6 @@ def readData(file, delimiter=',', datatype = np.dtype(np.unicode)):
 	
    return x, y
 
-# Funcion ver el porcentaje de valores perdidos en cada característica
-def valoresPerdidos(data):
-   """Parámetros:
-       datos: datos
-   """
-    
-   num_muestras, num_caracteristicas = data.shape
-   valores_perdidos = np.zeros(num_caracteristicas)
-   
-   for elemento in data:
-       for i in range(len(elemento)):
-           if(elemento[i] == '?'):
-               valores_perdidos[i] += 1
-        
-   porcentaje_valores_perdidos = np.zeros(num_caracteristicas)
-   for i in range(num_caracteristicas):
-       porcentaje_valores_perdidos[i] = 100*valores_perdidos[i]/num_muestras
-       
-   print(porcentaje_valores_perdidos)
-
 # Lectura de los datos 
 x_data, y_data = readData("./datos/agaricus-lepiota.data")
 
@@ -405,24 +348,16 @@ def seleccionar_mejor_modelo(preprocesamiento, clasificaciones, parametros, x_tr
         # si es True, entonces mostramos la puntuación y tiempo del modelo
         if( mostrar_puntuacion):
             print("Puntuación en el clasificador de {} con los parámetros {}".format( clasificaciones[i][0][0], clasificador.best_params_))
-            print("Precisión: ",  puntuacion)
+            print("Puntuación Accuracy: ",  puntuacion)
             print("Tiempo transcurrido (s): ", tiempo)
-            print("\n")
+            input("\n--- Pulsar tecla para continuar ---\n")
             
     return mejor_clasificador.best_estimator_
 
 #Clasificaciones a utilizar
 clasificaciones = []
-#Parámetros a probar el clasificador
+#Parámetros a probar con el clasificador
 parametros = []
-
-"""
-clasificaciones.append([("Ridge", RidgeClassifier())])
-parametros.append({'Ridge__alpha':[1, 10, 100],
-                   'Ridge__solver':['saga'],
-                   'Ridge__max_iter':[500],
-                   'Ridge__random_state':[semilla]})
-"""
 
 # Modelo Dummy para comparar con los otros modelos
 clasificaciones.append([('Dummy',DummyClassifier())])
@@ -443,7 +378,7 @@ parametros.append({'SGD__loss':['hinge'],
                    'SGD__alpha':[0.01, 0.005, 0.001, 0.0005, 0.0001, 0.00005, 0.00001],
                    'SGD__max_iter':[500],
                    'SGD__random_state':[semilla]})
-    
+
 # Modelos no lineales
 clasificaciones.append([("SVM", SVC())])
 parametros.append({'SVM__C':[1, 0.1, 0.01, 0.001],
@@ -465,8 +400,10 @@ parametros.append({'GradientBoosting__learning_rate':[0.5, 0.25, 0.1, 0.05, 0.01
                    'GradientBoosting__n_estimators':[10, 50, 100, 200, 500],
                    'GradientBoosting__random_state':[semilla]})
 
-#Elegimos el mejor modelo (y mostramos las puntuaciones de cada modelo)
+
+#Elegimos el mejor modelo (y mostramos las puntuaciones y gráficas de cada modelo)
 mejor_clasificador = seleccionar_mejor_modelo(preprocesamiento, clasificaciones, parametros, x_train, y_train)
+
 print("\nEl mejor clasificador ha sido ", mejor_clasificador)
 
 input("\n--- Pulsar tecla para continuar ---\n")
@@ -475,18 +412,7 @@ input("\n--- Pulsar tecla para continuar ---\n")
 ######## ESTIMACIÓN DE LOS ERRORES
 ###############################################################################
 
-# Volvemos a entrenar pero esta vez usamos el conjunto train original (train+validación) para entrenar el modelo
-
-
-#mejor_clasificador.fit(x_train, y_train)
-
-"""
-grafica_precision_recall(mejor_clasificador, x_test, y_test, "Gráfica Precision-Recall en el conjunto test")
-grafica_roc(mejor_clasificador, x_test, y_test, "Gráfica Curva ROC en el conjunto test")
-plot_learning_curve(mejor_clasificador, "Curvas de Aprendizaje del mejor clasificador", x_train, y_train)
-"""   
-         
-print("Errores del mejor clasificador:")
+print("Errores del mejor clasificador seleccionado:")
 grafica_matriz_confusion(mejor_clasificador, x_test, y_test, "Matriz de confusión en el conjunto test")
 print("Error en training: ", 1-puntuacion_precision(mejor_clasificador, x_train, y_train))
 print("Error en test: ", 1-puntuacion_precision(mejor_clasificador, x_test, y_test))
